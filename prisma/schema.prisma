@@ -53,6 +53,9 @@ model Attraction {
   name        String
   description String
   location    String
+  x           Float
+  y           Float
+  z           Float
   reviews     Review[]
 
   @@map("attractions")
