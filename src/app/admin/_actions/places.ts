@@ -53,7 +53,7 @@ export async function addAttraction(prevState: unknown, formData: FormData) {
   revalidatePath("/");
   revalidatePath("/attractions");
 
-  redirect("/admin/attractions");
+  redirect("/admin/places");
 }
 
 const editSchema = addSchema.extend({
