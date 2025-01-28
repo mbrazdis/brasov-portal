@@ -8,66 +8,66 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  events    Event[]  @relation("UserEvents")
-  reviews   Review[]
+  id         String      @id @default(uuid())
+  name       String
+  email      String      @unique
+  password   String
+  role       Role        @default(USER)
+  createdAt  DateTime    @default(now())
+  events     Event[]     @relation("UserEvents")
+  reviews    Review[]
   forumPosts ForumPost[]
 
   @@map("users")
 }
 
 model Event {
-  id          Int      @id @default(autoincrement())
+  id          String      @id @default(uuid())
   title       String
   description String
   date        DateTime
   location    String
-  createdBy   User     @relation("UserEvents", fields: [createdById], references: [id])
-  createdById Int
+  createdBy   User        @relation("UserEvents", fields: [createdById], references: [id])
+  createdById String
   reviews     Review[]
 
   @@map("events")
 }
 
 model Review {
-  id          Int      @id @default(autoincrement())
+  id          String      @id @default(uuid())
   content     String
-  rating      Int      @default(1) // Rating între 1 și 5
-  user        User     @relation(fields: [userId], references: [id])
-  userId      Int
-  event       Event?   @relation(fields: [eventId], references: [id])
-  eventId     Int?
+  rating      Int         @default(1) // Rating între 1 și 5
+  user        User        @relation(fields: [userId], references: [id])
+  userId      String
+  event       Event?      @relation(fields: [eventId], references: [id])
+  eventId     String?
   attraction  Attraction? @relation(fields: [attractionId], references: [id])
-  attractionId Int?
+  attractionId String?
 
   @@map("reviews")
 }
 
 model Attraction {
-  id          Int      @id @default(autoincrement())
+  id          String      @id @default(uuid())
   name        String
   description String
   location    String
   x           Float
   y           Float
   z           Float
+  imagePath   String
   reviews     Review[]
 
   @@map("attractions")
 }
 
 model ForumPost {
-  id        Int      @id @default(autoincrement())
+  id        String      @id @default(uuid())
   title     String
   content   String
-  user      User     @relation(fields: [userId], references: [id])
-  userId    Int
-  createdAt DateTime @default(now())
+  user      User        @relation(fields: [userId], references: [id])
+  userId    String
 
   @@map("forum_posts")
 }

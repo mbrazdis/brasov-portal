@@ -36,7 +36,7 @@ export default async function AdminDashboard() {
   ]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 bg-white lg:grid-cols-3 gap-4">
       <DashboardCard
         title="Evenimente"
         subtitle="Lista de evenimente"
@@ -67,7 +67,6 @@ export default async function AdminDashboard() {
           <div key={post.id}>
             <h3>{post.title}</h3>
             <p>{post.content}</p>
-            <p>{new Date(post.createdAt).toLocaleDateString()}</p>
           </div>
         ))}
       />

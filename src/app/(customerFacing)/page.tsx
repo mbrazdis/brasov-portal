@@ -122,7 +122,6 @@ function renderForumPost(forumPost: ForumPost) {
     <div>
       <h3>{forumPost.title}</h3>
       <p>{forumPost.content}</p>
-      <p>{new Date(forumPost.createdAt).toLocaleDateString()}</p>
     </div>
   );
 }
