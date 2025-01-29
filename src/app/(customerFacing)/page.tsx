@@ -3,6 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import db from "@/db/db";
 import { cache } from "@/lib/cache";
 import { Event, Attraction, ForumPost, Review } from "@prisma/client";
+import Image from "next/image";
+import CardSkeleton from "@/components/CardSkeleton";
+import { getAttractionData } from "@/lib/dataFetcher";
 
 const getEventData = cache(
   () => db.event.findMany(),
@@ -10,8 +13,11 @@ const getEventData = cache(
   { revalidate: 60 * 60 * 24 }
 );
 
-const getAttractionData = cache(
-  () => db.attraction.findMany(),
+const fetchAttractionData = cache(
+  async () => {
+    const attractions = await db.attraction.findMany();
+    return attractions;
+  },
   ["/", "getAttractionData"],
   { revalidate: 60 * 60 * 24 }
 );
@@ -30,7 +36,7 @@ const getReviewData = cache(
 
 export default function AdminDashboard() {
   return (
-    <div className="font-sans w-full">
+    <div className="font-sans w-full pt-4">
       <div className="container pl-6 pr-6">
         {/* Main Content */}
 
@@ -38,7 +44,7 @@ export default function AdminDashboard() {
         <section className="py-8 bg-gray-50 text-center w-full">
           <div className="w-full">
             <h2 className="text-3xl font-bold mb-6">Evenimente</h2>
-            <Suspense fallback={<CardSkeleton />}>
+            <Suspense fallback={<LocalCardSkeleton />}>
               <DataSuspense dataFetcher={getEventData} renderData={renderEvent} />
             </Suspense>
           </div>
@@ -49,7 +55,7 @@ export default function AdminDashboard() {
           <div className="w-full">
             <h2 className="text-3xl font-bold mb-6">Atractii Turistice</h2>
             <Suspense fallback={<CardSkeleton />}>
-              <DataSuspense dataFetcher={getAttractionData} renderData={renderAttraction} />
+              <DataSuspense dataFetcher={fetchAttractionData} renderData={renderAttraction} />
             </Suspense>
           </div>
         </section>
@@ -109,10 +115,17 @@ function renderEvent(event: Event) {
 
 function renderAttraction(attraction: Attraction) {
   return (
-    <div>
-      <h3>{attraction.name}</h3>
-      <p>{attraction.description}</p>
-      <p>{attraction.location}</p>
+    <div key={attraction.id} className="bg-white p-4 rounded-lg shadow-md">
+      <Image
+        src={attraction.imagePath}
+        alt={attraction.name}
+        width={400}
+        height={300}
+        className="rounded-lg mb-4"
+      />
+      <h3 className="text-xl font-bold mb-2">{attraction.name}</h3>
+      <p className="text-gray-700 mb-2">{attraction.location}</p>
+      <p className="text-gray-500">{attraction.description}</p>
     </div>
   );
 }
@@ -135,7 +148,7 @@ function renderReview(review: Review) {
   );
 }
 
-function CardSkeleton() {
+function LocalCardSkeleton() {
   return (
     <Card>
       <CardHeader>
