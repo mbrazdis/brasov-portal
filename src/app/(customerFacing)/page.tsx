@@ -57,6 +57,21 @@ export default function AdminDashboard() {
       <div className="container pl-6 pr-6">
         {/* Main Content */}
 
+      {/* Brasov City Description Section */}
+      <section className="py-8 bg-gray-50 text-center w-full">
+        <div className="w-full max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold mb-6">About Brasov</h2>
+          <p className="text-gray-700 text-lg">
+            Brasov is a city in Romania, located in the central part of the country. It is known for its medieval
+            architecture, vibrant cultural scene, and beautiful natural surroundings. The city is surrounded by the
+            Carpathian Mountains, making it a popular destination for outdoor activities such as hiking, skiing, and
+            mountain biking. Brasov is also home to several historical landmarks, including the Black Church, the
+            Council Square, and the Brasov Fortress. With its rich history and stunning scenery, Brasov is a must-visit
+            destination for travelers.
+          </p>
+        </div>
+      </section>
+
         {/* Events Section */}
         <section className="py-8 bg-gray-50 text-center w-full">
           <div className="w-full">
