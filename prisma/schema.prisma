@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "sqlite" 
   url      = env("DATABASE_URL")
 }
 
@@ -14,7 +14,6 @@ model User {
   password   String
   role       Role        @default(USER)
   createdAt  DateTime    @default(now())
-  events     Event[]     @relation("UserEvents")
   reviews    Review[]
   forumPosts ForumPost[]
 
@@ -27,17 +26,27 @@ model Event {
   description String
   date        DateTime
   location    String
-  createdBy   User        @relation("UserEvents", fields: [createdById], references: [id])
-  createdById String
+  isActive    Boolean     @default(true)
   reviews     Review[]
 
   @@map("events")
 }
 
+model News {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  date      DateTime
+  imagePath String
+  isActive  Boolean  @default(true)
+
+  @@map("news")
+}
+
 model Review {
   id          String      @id @default(uuid())
   content     String
-  rating      Int         @default(1) // Rating între 1 și 5
+  rating      Int         @default(1) 
   user        User        @relation(fields: [userId], references: [id])
   userId      String
   event       Event?      @relation(fields: [eventId], references: [id])
@@ -57,6 +66,7 @@ model Attraction {
   y           Float
   z           Float
   imagePath   String
+  isActive    Boolean     @default(true)
   reviews     Review[]
 
   @@map("attractions")
