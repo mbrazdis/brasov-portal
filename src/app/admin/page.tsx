@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -27,59 +28,46 @@ async function getReviewData() {
   return reviews;
 }
 
+async function getNewsData() {
+  const news = await db.news.findMany();
+  return news;
+}
 export default async function AdminDashboard() {
-  const [events, attractions, forumPosts, reviews] = await Promise.all([
+  const [events, attractions, forumPosts, reviews, news] = await Promise.all([
     getEventData(),
     getAttractionData(),
     getForumPostData(),
     getReviewData(),
+    getNewsData(),
   ]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 bg-white lg:grid-cols-3 gap-4">
       <DashboardCard
         title="Evenimente"
-        subtitle="Lista de evenimente"
-        body={events.map(event => (
-          <div key={event.id}>
-            <h3>{event.title}</h3>
-            <p>{event.description}</p>
-            <p>{new Date(event.date).toLocaleDateString()}</p>
-            <p>{event.location}</p>
-          </div>
-        ))}
+        subtitle="Numar de evenimente"
+        body={<p>{events.length} evenimente</p>}
       />
       <DashboardCard
         title="Atractii Turistice"
-        subtitle="Lista de atractii turistice"
-        body={attractions.map(attraction => (
-          <div key={attraction.id}>
-            <h3>{attraction.name}</h3>
-            <p>{attraction.description}</p>
-            <p>{attraction.location}</p>
-          </div>
-        ))}
+        subtitle="Numar de atractii turistice: "
+        body={<p>{attractions.length} atractii</p>}
+          />
+          <DashboardCard
+            title="Forum"
+            subtitle="Numar de postari recente pe forum"
+            body={<p>{forumPosts.length} postari</p>}
+          />
+          <DashboardCard
+            title="Recenzii la Evenimente"
+            subtitle="Recenzii recente la evenimente"
+            body={<p>{reviews.length} review-uri</p>}
       />
       <DashboardCard
-        title="Forum"
-        subtitle="Postari recente pe forum"
-        body={forumPosts.map(post => (
-          <div key={post.id}>
-            <h3>{post.title}</h3>
-            <p>{post.content}</p>
-          </div>
-        ))}
-      />
-      <DashboardCard
-        title="Recenzii la Evenimente"
-        subtitle="Recenzii recente la evenimente"
-        body={reviews.map(review => (
-          <div key={review.id}>
-            <p>{review.content}</p>
-            <p>Rating: {review.rating}</p>
-          </div>
-        ))}
-      />
+            title="Stiri"
+            subtitle="Numar de stiri postate: "
+            body={<p>{news.length} postari</p>}
+          />
     </div>
   );
 }

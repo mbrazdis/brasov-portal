@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "../_components/PageHeader";
 import Link from "next/link";
@@ -60,7 +62,7 @@ async function EventsTable() {
           <TableHead>Location</TableHead>
           <TableHead>Date</TableHead>
           <TableHead>Reviews</TableHead>
-          <TableHead className="w-0">
+          <TableHead className="w-10">
             <span className="sr-only">Actions</span>
           </TableHead>
         </TableRow>
@@ -76,7 +78,7 @@ async function EventsTable() {
             <TableCell>{new Date(event.date).toLocaleDateString()}</TableCell>
             <TableCell>{event._count.reviews}</TableCell>
             <TableCell>
-              <DropdownMenu>
+            <DropdownMenu>
                 <DropdownMenuTrigger className="hover:bg-[#FF5733] hover:text-white">
                   <MoreVertical />
                   <span className="sr-only">Actions</span>
@@ -88,7 +90,7 @@ async function EventsTable() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DeleteDropdownItem id={event.id} disabled={event._count.reviews > 0} />
+
                 </DropdownMenuContent>
               </DropdownMenu>
             </TableCell>

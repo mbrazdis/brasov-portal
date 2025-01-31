@@ -101,7 +101,7 @@ export async function updateAttraction(
   revalidatePath("/");
   revalidatePath("/attractions");
 
-  redirect("/admin/attractions");
+  redirect("/admin/places");
 }
 
 export async function deleteAttraction(id: string) {

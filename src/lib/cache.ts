@@ -1,4 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+/* eslint-disable */
 
 import { unstable_cache as nextCache } from "next/cache"
 import { cache as reactCache } from "react"

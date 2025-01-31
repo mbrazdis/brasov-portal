@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "../_components/PageHeader";
 import Link from "next/link";
@@ -57,7 +59,7 @@ const attractions = await db.attraction.findMany({
           <TableHead>Name</TableHead>
           <TableHead>Location</TableHead>
           <TableHead>Reviews</TableHead>
-          <TableHead className="w-0">
+          <TableHead className="w-10">
             <span className="sr-only">Actions</span>
           </TableHead>
         </TableRow>

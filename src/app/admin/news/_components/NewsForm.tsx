@@ -67,16 +67,15 @@ export function NewsForm({ news }: { news?: News | null }) {
         {error.date && <div className="text-destructive">{error.date}</div>}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="imagePath">Image Path</Label>
+        <Label htmlFor="image">Image</Label>
         <Input
-          type="text"
-          id="imagePath"
-          name="imagePath"
-          required
-          defaultValue={news?.imagePath || ""}
+          type="file"
+          id="image"
+          name="image"
+          required={news == null}
         />
-        {error.imagePath && (
-          <div className="text-destructive">{error.imagePath}</div>
+        {error.image && (
+          <div className="text-destructive">{error.image}</div>
         )}
       </div>
       <SubmitButton />

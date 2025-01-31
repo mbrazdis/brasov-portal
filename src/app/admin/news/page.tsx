@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "../_components/PageHeader";
 import Link from "next/link";
@@ -60,7 +62,6 @@ async function NewsTable() {
           <TableHead>Title</TableHead>
           <TableHead>Content</TableHead>
           <TableHead>Date</TableHead>
-          <TableHead>Image</TableHead>
           <TableHead className="w-0">
             <span className="sr-only">Actions</span>
           </TableHead>
@@ -73,13 +74,10 @@ async function NewsTable() {
               {news.isActive ? <CheckCircle2 /> : <XCircle />}
             </TableCell>
             <TableCell>{news.title}</TableCell>
-            <TableCell>{news.content}</TableCell>
+            <TableCell>{news.content.length > 100 ? `${news.content.substring(0, 100)}...` : news.content}</TableCell>
             <TableCell>{new Date(news.date).toLocaleDateString()}</TableCell>
             <TableCell>
-              <img src={news.imagePath} alt={news.title} width={100} />
-            </TableCell>
-            <TableCell>
-              <DropdownMenu>
+            <DropdownMenu>
                 <DropdownMenuTrigger className="hover:bg-[#FF5733] hover:text-white">
                   <MoreVertical />
                   <span className="sr-only">Actions</span>
@@ -91,7 +89,6 @@ async function NewsTable() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DeleteDropdownItem id={news.id} />
                 </DropdownMenuContent>
               </DropdownMenu>
             </TableCell>

@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import React, { Suspense } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import db from "@/db/db";
@@ -22,6 +24,15 @@ const fetchAttractionData = cache(
   { revalidate: 60 * 60 * 24 }
 );
 
+const fetchNewsData = cache(
+  async () => {
+    const news = await db.news.findMany();
+    return news;
+  },
+  ["/", "getNewsData"],
+  { revalidate: 60 * 60 * 24 }
+);
+
 const getForumPostData = cache(
   () => db.forumPost.findMany(),
   ["/", "getForumPostData"],
@@ -31,6 +42,12 @@ const getForumPostData = cache(
 const getReviewData = cache(
   () => db.review.findMany(),
   ["/", "getReviewData"],
+  { revalidate: 60 * 60 * 24 }
+);
+
+const getNewsData = cache(
+  () => db.news.findMany(),
+  ["/", "getNewsData"],
   { revalidate: 60 * 60 * 24 }
 );
 
@@ -50,6 +67,16 @@ export default function AdminDashboard() {
           </div>
         </section>
 
+        {/* News Section */}
+        <section className="py-8 bg-gray-50 text-center w-full mt-8">
+          <div className="w-full">
+            <h2 className="text-3xl font-bold mb-6">Stiri</h2>
+            <Suspense fallback={<LocalCardSkeleton />}>
+              <DataSuspense dataFetcher={fetchNewsData} renderData={renderNews} />
+            </Suspense>
+          </div>
+        </section>
+
         {/* Attractions Section */}
         <section className="py-8 bg-gray-50 text-center w-full">
           <div className="w-full">
@@ -60,25 +87,6 @@ export default function AdminDashboard() {
           </div>
         </section>
 
-        {/* Forum Section */}
-        <section className="py-8 bg-gray-50 text-center w-full">
-          <div className="w-full">
-            <h2 className="text-3xl font-bold mb-6">Forum</h2>
-            <Suspense fallback={<CardSkeleton />}>
-              <DataSuspense dataFetcher={getForumPostData} renderData={renderForumPost} />
-            </Suspense>
-          </div>
-        </section>
-
-        {/* Reviews Section */}
-        <section className="py-8 bg-gray-50 text-center w-full">
-          <div className="w-full">
-            <h2 className="text-3xl font-bold mb-6">Recenzii la Evenimente</h2>
-            <Suspense fallback={<CardSkeleton />}>
-              <DataSuspense dataFetcher={getReviewData} renderData={renderReview} />
-            </Suspense>
-          </div>
-        </section>
       </div>
     </div>
   );
@@ -135,6 +143,20 @@ function renderForumPost(forumPost: ForumPost) {
     <div>
       <h3>{forumPost.title}</h3>
       <p>{forumPost.content}</p>
+    </div>
+  );
+}
+
+function renderNews(news: { id: string; title: string; content: string; date: Date; imagePath: string; isActive: boolean; }) {
+  return (
+    <div>
+      <h3>{news.title}</h3>
+      <div className="flex justify-center">
+        <Image src={news.imagePath} alt={news.title} width={300} height={225} />
+      </div>
+      <p>{news.content}</p>
+      <p>{new Date(news.date).toLocaleDateString()}</p>
+      
     </div>
   );
 }

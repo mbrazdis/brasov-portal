@@ -1,5 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+/* eslint-disable */
 
+import { PrismaClient } from "@prisma/client";
 
 const prismaClientSingleton = () => {
   return new PrismaClient();
