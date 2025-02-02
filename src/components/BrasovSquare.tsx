@@ -3,14 +3,12 @@
 import * as THREE from "three";
 
 import React, { useRef, useEffect, useState } from "react";
+import Stats from 'three/addons/libs/stats.module.js';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js"
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
-import { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
-import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
 import { gsap } from "gsap";
 
 const BrasovSquare: React.FC = () => {
@@ -27,11 +25,7 @@ const BrasovSquare: React.FC = () => {
             return;
         }
 
-        const bloomLayer = new THREE.Layers();
-        bloomLayer.set(1);
-
-        const darkMaterial = new THREE.MeshBasicMaterial({ color: "black" });
-        const materials: { [key: string]: THREE.Material } = {};
+        const stats = new Stats();
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -42,6 +36,7 @@ const BrasovSquare: React.FC = () => {
             container.style.width = '100%';
             container.style.height = '100%';
             container.style.overflow = 'hidden';
+            container.append(stats.dom);
             container.appendChild(renderer.domElement);
             renderer.setSize(container.clientWidth, container.clientHeight);
         }
@@ -78,48 +73,6 @@ const BrasovSquare: React.FC = () => {
 
         const renderPass = new RenderPass(scene, camera);
 
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0;
-        bloomPass.strength = 0.001;
-        bloomPass.radius = 0.001;
-
-        const bloomComposer = new EffectComposer(renderer);
-        bloomComposer.renderToScreen = false;
-        bloomComposer.addPass(renderPass);
-        bloomComposer.addPass(bloomPass);
-
-        const vs = `
-                    varying vec2 vUv;
-                    void main() {
-                        vUv = uv;
-                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                    }
-                `;
-
-        const fs = `
-                    uniform sampler2D baseTexture;
-                    uniform sampler2D bloomTexture;
-                    varying vec2 vUv;
-                    void main() {
-                        gl_FragColor = texture2D(baseTexture, vUv) + texture2D(bloomTexture, vUv);
-                    }
-                `;
-
-        const finalPass = new ShaderPass(
-            new THREE.ShaderMaterial({
-                uniforms: {
-                    baseTexture: { value: null },
-                    bloomTexture: { value: bloomComposer.renderTarget2.texture }
-                },
-                vertexShader: vs,
-                fragmentShader: fs,
-                defines: {}
-            }), 'baseTexture'
-        );
-        finalPass.needsSwap = true;
-
-        const outputPass = new OutputPass();
-
         const outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
         outlinePass.edgeStrength = 10.0;
         outlinePass.edgeGlow = 0.5;
@@ -128,11 +81,9 @@ const BrasovSquare: React.FC = () => {
         outlinePass.visibleEdgeColor.set('#ff0000');
         outlinePass.hiddenEdgeColor.set('#ff0f05');
 
-        const finalComposer = new EffectComposer(renderer);
-        finalComposer.addPass(renderPass);
-        finalComposer.addPass(finalPass);
-        finalComposer.addPass(outlinePass);
-        finalComposer.addPass(outputPass);
+        const outputComposer = new EffectComposer(renderer);
+        outputComposer.addPass(renderPass);
+        outputComposer.addPass(outlinePass);
 
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
@@ -226,20 +177,6 @@ const BrasovSquare: React.FC = () => {
         renderer.domElement.addEventListener('pointermove', onPointerMove);
         renderer.domElement.addEventListener('click', onClick);
 
-        const darkenNonBloomed = (obj: THREE.Object3D) => {
-            if (obj instanceof THREE.Mesh && bloomLayer.test(obj.layers) === false) {
-                materials[obj.uuid] = obj.material;
-                obj.material = darkMaterial;
-            }
-        }
-
-        const restoreMaterial = (obj: THREE.Object3D) => {
-            if (materials[obj.uuid]) {
-                (obj as THREE.Mesh).material = materials[obj.uuid];
-                delete materials[obj.uuid];
-            }
-        }
-
         const renderScene = (): void => {
 
             const time = Date.now() * 0.001;
@@ -254,11 +191,7 @@ const BrasovSquare: React.FC = () => {
 
             light.position.set(camera.position.x, camera.position.y, camera.position.z);
 
-            modelRef.current?.traverse(darkenNonBloomed);
-            bloomComposer.render(time);
-            modelRef.current?.traverse(restoreMaterial);
-
-            finalComposer.render();
+            outputComposer.render();
 
             if (infoContainerRef.current) {
                 infoContainerRef.current.innerText = `Position: x: ${camera.position.x.toFixed(2)}, y: ${camera.position.y.toFixed(2)}, z: ${camera.position.z.toFixed(2)}
@@ -267,6 +200,8 @@ const BrasovSquare: React.FC = () => {
                 Intersect: ${selectedObjectRef.current?.name}
                 `;
             }
+            
+            stats.update();
         };
 
         renderer.setAnimationLoop(renderScene);
