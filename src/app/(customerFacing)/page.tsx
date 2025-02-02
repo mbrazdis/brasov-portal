@@ -57,6 +57,23 @@ export default function AdminDashboard() {
       <div className="container pl-6 pr-6">
         {/* Main Content */}
 
+      {/* Brasov City Image Section */}
+      <section className="py-8 bg-gray-50 text-center w-full">
+        <div className="w-full">
+          <h2 className="text-3xl font-bold mb-6">Brasov City</h2>
+          <div className="flex justify-center overflow-hidden" style={{ height: '300px' }}>
+        <Image
+          src="/brasov-romania.jpg"
+          alt="Brasov City"
+          width={1757}
+          height={600}
+          className="rounded-lg shadow-md object-cover"
+          style={{ height: 'auto', width: 'auto' }}
+        />
+          </div>
+        </div>
+      </section>
+
       {/* Brasov City Description Section */}
       <section className="py-8 bg-gray-50 text-center w-full">
         <div className="w-full max-w-4xl mx-auto">

@@ -1,32 +1,29 @@
 'use client'
 
-import React, { useRef, useEffect } from "react";
 import * as THREE from "three";
-import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
-import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
+
+import React, { useRef, useEffect } from "react";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
-import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
-import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js"
 
 const BrasovSquare: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const selectedObjectRef = useRef<THREE.Object3D | null>(null);
-
+    const coordinatesRef = useRef<HTMLDivElement>(null);
+    const modelRef = useRef<THREE.Object3D | null>(null);
+    
     useEffect(() => {
         if (typeof window === 'undefined') {
             return;
         }
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(2.20, 3.61, -7.50);
 
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 5;
-
+        scene.background = new THREE.Color(0xffffff);
+        scene.fog = new THREE.Fog(0xffffff, 0.02, 50);
+        
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
 
         const container = containerRef.current;
         if (container) {
@@ -37,102 +34,25 @@ const BrasovSquare: React.FC = () => {
             renderer.setSize(container.clientWidth, container.clientHeight);
         }
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
-        scene.add(ambientLight);
-
-        const pointLight = new THREE.PointLight(0xffffff, 1);
-        camera.add(pointLight);
-        scene.add(camera);
-
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.minDistance = 1;
-        controls.maxDistance = 10;
+        controls.maxDistance = 550;
 
-        const mtlLoader = new MTLLoader();
-        const objLoader = new OBJLoader();
+        const gltfLoader = new GLTFLoader();
 
-        mtlLoader.load('models/obj/piatasfatului.mtl', (materials) => {
-            materials.preload();
-            objLoader.setMaterials(materials);
-            objLoader.load('models/obj/piatasfatului.obj', (object) => {
-                object.position.y = -0.95;
-                object.scale.setScalar(0.1);
-                scene.add(object);
-            });
-        });
-
-        const composer = new EffectComposer(renderer);
-        const renderPass = new RenderPass(scene, camera);
-        composer.addPass(renderPass);
-
-        const outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
-        composer.addPass(outlinePass);
-
-        const effectFXAA = new ShaderPass(FXAAShader);
-        effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
-        composer.addPass(effectFXAA);
-
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        const onMouseClick = (event: MouseEvent) => {
-            if (!container) return;
-
-            mouse.x = (event.clientX / container.clientWidth) * 2 - 1;
-            mouse.y = -(event.clientY / container.clientHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(scene.children, true);
-
-            if (intersects.length > 0) {
-                const selectedObject = intersects[0].object;
-                outlinePass.selectedObjects = [selectedObject];
-                selectedObjectRef.current = selectedObject;
-            } else {
-                outlinePass.selectedObjects = [];
-                selectedObjectRef.current = null;
-            }
-        };
-
-        container?.addEventListener('click', onMouseClick);
-
-        const fetchPins = async () => {
-            try {
-                const response = await fetch('/api/pins');
-                const pins = await response.json();
-                pins.forEach((pin: { x: number, y: number, z: number }) => {
-                    const geometry = new THREE.SphereGeometry(0.1, 32, 32);
-                    const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-                    const sphere = new THREE.Mesh(geometry, material);
-                    sphere.position.set(pin.x, pin.y, pin.z); 
-                    scene.add(sphere);
-                });
-            } catch (error) {
-                console.error('Error fetching pins:', error);
-            }
-        };
-
-        fetchPins();
-
-        const textureLoader = new THREE.TextureLoader();
-        const texture = textureLoader.load('textures\skybox.png', () => {
-            const shader = THREE.ShaderLib['cube'];
-            shader.uniforms['tCube'].value = texture;
-
-            const material = new THREE.ShaderMaterial({
-                fragmentShader: shader.fragmentShader,
-                vertexShader: shader.vertexShader,
-                uniforms: shader.uniforms,
-                depthWrite: false,
-                side: THREE.BackSide
-            });
-
-            const skybox = new THREE.Mesh(new THREE.BoxGeometry(1000, 1000, 1000), material);
-            scene.add(skybox);
+        gltfLoader.load('models/gltf/piata_sfatului.glb', (gltf) => {
+            const model = gltf.scene;
+            modelRef.current = model;
+            model.position.set(0, -0.95, 0);
+            model.scale.set(0.1, 0.1, 0.1);
+            scene.add(model);
         });
 
         const renderScene = () => {
-            composer.render();
+            renderer.render(scene, camera);
+            if (coordinatesRef.current) {
+                coordinatesRef.current.innerText = `x: ${camera.position.x.toFixed(2)}, y: ${camera.position.y.toFixed(2)}, z: ${camera.position.z.toFixed(2)}`;
+            }
         };
 
         renderer.setAnimationLoop(renderScene);
@@ -158,7 +78,12 @@ const BrasovSquare: React.FC = () => {
 
     }, []);
 
-    return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
+    return (
+        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+            <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+            <div ref={coordinatesRef} style={{ position: 'absolute', top: '10px', left: '10px', color: 'black', backgroundColor: 'white', padding: '5px', borderRadius: '5px' }} />
+        </div>
+    );
 }
 
 export default BrasovSquare;
