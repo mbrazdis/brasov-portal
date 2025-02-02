@@ -2,7 +2,7 @@
 
 import * as THREE from "three";
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js"
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
@@ -11,12 +11,15 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { gsap } from "gsap";
 
 const BrasovSquare: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const infoContainerRef = useRef<HTMLDivElement>(null);
     const modelRef = useRef<THREE.Object3D | null>(null);
     const selectedObjectRef = useRef<THREE.Object3D | null>(null);
+    const buildingDetailsRef = useRef<HTMLDivElement>(null);
+    const [buildingDetails, setBuildingDetails] = useState<{ name: string, description: string, imageUrl: string } | null>(null);
 
     useEffect(() => {
 
@@ -50,6 +53,9 @@ const BrasovSquare: React.FC = () => {
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(8.0, 10.0, -20.0);
         camera.lookAt(0, 0, 0);
+
+        const ambient = new THREE.AmbientLight(0xf3f4f2, 1);
+        scene.add(ambient);
 
         const light = new THREE.DirectionalLight(0xf0f0f0, 0.05);
         light.castShadow = true;
@@ -155,18 +161,60 @@ const BrasovSquare: React.FC = () => {
             checkIntersection();
         }
 
-        const animateCamera = () => {
-
-        }
 
         const onClick = () => {
             raycaster.setFromCamera(pointer, camera);
             const intersects = raycaster.intersectObjects(scene.children, true);
 
             if (intersects.length > 0) {
+                const target = intersects[0].object;
 
+                if (target.name.startsWith("Building_Casa_Sfatului")) {
+
+                    setBuildingDetails({
+                        name: "Casa Sfatului",
+                        description: `Short description about Casa Sfatului. This building is located in Brasov, Romania.`,
+                        imageUrl: "/images/casa_sfatului.jpg"
+                    });
+
+                    gsap.to(controls.target, {
+                        x: -9.24, y: 0.73, z: 5.99,
+                        duration: 2,
+                        ease: "power3.inOut"
+                    });
+
+                    gsap.to(camera.position, {
+                        x: -11.43, y: 2.81, z: 19.88,
+                        duration: 2,
+                        ease: "power3.inOut",
+                        onUpdate: () => {
+                            controls.update()
+                        },
+                    });
+                } else if (target.name.startsWith("Building_Biserica_N")) {
+
+                    setBuildingDetails({
+                        name: "Biserica Neagra",
+                        description: `Short description about Biserica Neagra. This building is located in Brasov, Romania.`,
+                        imageUrl: "/images/biserica_neagra.jpeg"
+                    });
+
+                    gsap.to(controls.target, {
+                        x: -26.42, y: 5.08, z: 24.34,
+                        duration: 2,
+                        ease: "power3.inOut"
+                    });
+
+                    gsap.to(camera.position, {
+                        x: -38.66, y: 9.37, z: 18.51,
+                        duration: 2,
+                        ease: "power3.inOut",
+                        onUpdate: () => {
+                            controls.update()
+                        },
+                    });
+                }
             }
-            console.log(camera);
         };
 
         const onKeyDown = (event: KeyboardEvent) => {
@@ -200,29 +248,25 @@ const BrasovSquare: React.FC = () => {
                 modelRef.current.rotation.y = time * 0.15 * 0;
             }
 
-            animateCamera();
-
             if (camera.position.y < 0) {
                 camera.position.y = 0;
             }
 
             light.position.set(camera.position.x, camera.position.y, camera.position.z);
 
-            selectedObjectRef.current?.traverse(darkenNonBloomed);
+            modelRef.current?.traverse(darkenNonBloomed);
             bloomComposer.render(time);
-            selectedObjectRef.current?.traverse(restoreMaterial);
+            modelRef.current?.traverse(restoreMaterial);
 
             finalComposer.render();
 
             if (infoContainerRef.current) {
                 infoContainerRef.current.innerText = `Position: x: ${camera.position.x.toFixed(2)}, y: ${camera.position.y.toFixed(2)}, z: ${camera.position.z.toFixed(2)}
-                Quaternion: x: ${camera.quaternion.x.toFixed(2)}, y: ${camera.quaternion.y.toFixed(2)}, z: ${camera.quaternion.z.toFixed(2)}, w: ${camera.quaternion.w.toFixed(2)};
-                Rotation: x: ${camera.rotation.x.toFixed(2)}, y: ${camera.rotation.y.toFixed(2)}, z: ${camera.rotation.z.toFixed(2)}
+                Target: x: ${controls.target.x.toFixed(2)}, y: ${controls.target.y.toFixed(2)}, z: ${controls.target.z.toFixed(2)}
                 Mouse: x: ${pointer.x.toFixed(2)}, y: ${pointer.y.toFixed(2)}
                 Intersect: ${selectedObjectRef.current?.name}
                 `;
             }
-
         };
 
         renderer.setAnimationLoop(renderScene);
@@ -254,7 +298,27 @@ const BrasovSquare: React.FC = () => {
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
             <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
-            <div ref={infoContainerRef} style={{ position: 'absolute', top: '10px', left: '10px', color: 'black', backgroundColor: 'white', padding: '5px', borderRadius: '5px' }} />
+
+            {/* Card with details about the selected building */}
+            {buildingDetails && (
+                <div ref={buildingDetailsRef} style={{
+                    position: 'absolute',
+                    top: '10px',
+                    left: '10px',
+                    backgroundColor: 'white',
+                    padding: '15px',
+                    borderRadius: '10px',
+                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+                    width: '30%',
+                    zIndex: 10
+                }}>
+                    <h2 style={{ color: 'black' }}>{buildingDetails.name}</h2>
+                    <img src={buildingDetails.imageUrl} alt={buildingDetails.name} style={{ width: '100%', height: 'auto', borderRadius: '5px' }} />
+                    <p style={{ color: 'black', marginTop: '10px' }}>{buildingDetails.description}</p>
+                </div>
+            )}
+
+            {/* <div ref={infoContainerRef} style={{ position: 'absolute', top: '700px', left: '10px', color: 'black', backgroundColor: 'white', padding: '5px', borderRadius: '5px' }} /> */}
         </div>
     );
 }
