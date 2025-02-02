@@ -30,6 +30,7 @@ const BrasovSquare: React.FC = () => {
             container.style.width = '100%';
             container.style.height = '100%';
             container.style.overflow = 'hidden';
+            renderer.setPixelRatio( window.devicePixelRatio );
             container.appendChild(renderer.domElement);
             renderer.setSize(container.clientWidth, container.clientHeight);
         }
