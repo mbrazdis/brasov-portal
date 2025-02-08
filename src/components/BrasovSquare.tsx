@@ -2,48 +2,30 @@
 import * as THREE from "three";
 import React, { useRef, useEffect, useState } from "react";
 import Stats from 'three/addons/libs/stats.module.js';
-import Image  from "next/image";
+import Image from "next/image";
 import debounce from "lodash.debounce";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js"
+import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
-import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { gsap } from "gsap";
 
-const GrayscaleShader = {
-    uniforms: {
-        "tDiffuse": { value: null },
-        "amount": { value: 1.0 }
-    },
-    vertexShader: `
-        varying vec2 vUv;
-        void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-    `,
-    fragmentShader: `
-        uniform sampler2D tDiffuse;
-        uniform float amount;
-        varying vec2 vUv;
-        
-        void main() {
-            vec4 color = texture2D(tDiffuse, vUv);
-            float orange = dot(color.rgb, vec3(0.8, 0.34, 0.2)); 
-            gl_FragColor = mix(color, vec4(vec3(orange), color.a), amount);
-        }
-    `
-};
+const buildings = [
+    'Building_Casa_Sfat',
+    'Building_Casa_Mures',
+    'Building_Biserica_Neagr',
+];
 
 const BrasovSquare: React.FC = () => {
-    const modelRef = useRef<THREE.Object3D | null>(null);
+    const modelRef = useRef<THREE.Group | null>(null);
     const selectedObjectRef = useRef<THREE.Object3D | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const infoContainerRef = useRef<HTMLDivElement>(null);
     const buildingDetailsRef = useRef<HTMLDivElement>(null);
     const [buildingDetails, setBuildingDetails] = useState<{ name: string, description: string, imageUrl: string } | null>(null);
+    const [loadingProgress, setLoadingProgress] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
 
@@ -56,7 +38,6 @@ const BrasovSquare: React.FC = () => {
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.toneMapping = THREE.ReinhardToneMapping;
 
         const container = containerRef.current;
         if (container) {
@@ -69,34 +50,50 @@ const BrasovSquare: React.FC = () => {
         }
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xeaeaea);
-        scene.fog = new THREE.Fog(0xeaeaea, 20, 100);
+        scene.fog = new THREE.Fog(0xeaeaea, 50, 200);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(8.0, 10.0, -20.0);
 
-        const ambient = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambient);
-
         const directional = new THREE.DirectionalLight(0xffffff, 1);
-        directional.castShadow = true;
         scene.add(directional);
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.minDistance = 5;
         controls.maxDistance = 50;
-        controls.maxPolarAngle = Math.PI * 0.5;
         controls.panSpeed = 4;
         controls.enableDamping = true;
+        controls.dampingFactor = 0.5;
 
-        const gltfLoader = new GLTFLoader();
-        gltfLoader.load('models/gltf/piata_sfatului.glb', (gltf) => {
-            const model = gltf.scene;
-            modelRef.current = model;
-            model.position.set(0, -0.95, 0);
-            model.scale.set(0.19, 0.19, 0.19);
-            scene.add(model);
-        });
+        const cubeTextureLoader = new THREE.CubeTextureLoader();
+        cubeTextureLoader.setPath('textures/skybox/');
+        const skyboxTexture = cubeTextureLoader.load([
+            'right.png', 'left.png', 'top.png',
+            'bottom.png', 'front.png', 'back.png']);
+        scene.background = skyboxTexture;
+
+        const onProgress = (xhr: ProgressEvent) => {
+            if (xhr.lengthComputable) {
+                const percentComplete = (xhr.loaded / xhr.total) * 100;
+                setLoadingProgress(percentComplete);
+            }
+        };
+
+        new OBJLoader().load(
+            'models/brasov.obj',
+            (obj) => {
+                modelRef.current = obj;
+                obj.position.set(0, -0.95, 0);
+                obj.scale.set(0.2, 0.2, 0.2);
+                scene.add(obj);
+        
+                setIsLoading(false); 
+            },
+            onProgress,
+            (error) => {
+                console.error("Error loading OBJ model:", error);
+            }
+        );
 
         const renderPass = new RenderPass(scene, camera);
         const outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
@@ -104,15 +101,12 @@ const BrasovSquare: React.FC = () => {
         outlinePass.edgeGlow = 1.5;
         outlinePass.edgeThickness = 5.0;
         outlinePass.pulsePeriod = 1;
-        outlinePass.visibleEdgeColor.set('#ff0000');
-        outlinePass.hiddenEdgeColor.set('#ff0f05');
-
-        const grayscalePass = new ShaderPass(GrayscaleShader);
+        outlinePass.visibleEdgeColor.set('#ffffff');
+        outlinePass.hiddenEdgeColor.set('#ffffff');
 
         const outputComposer = new EffectComposer(renderer);
         outputComposer.addPass(renderPass);
         outputComposer.addPass(outlinePass);
-        outputComposer.addPass(grayscalePass);
 
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
@@ -120,9 +114,13 @@ const BrasovSquare: React.FC = () => {
         const highlightOnIntersection = debounce(() => {
             raycaster.setFromCamera(pointer, camera);
             const intersects = raycaster.intersectObjects(scene.children, true);
-            selectedObjectRef.current = intersects.length > 0 ? intersects[0].object.parent : null;
-            outlinePass.selectedObjects = selectedObjectRef.current?.name.startsWith('Building_') ? [selectedObjectRef.current] : [];
-        }, 50);
+            if (intersects.length > 0) {
+                const target = intersects[0].object;
+                const isBuilding = buildings.some(name => target.name.startsWith(name));
+                selectedObjectRef.current = isBuilding ? target : null;
+                outlinePass.selectedObjects = isBuilding ? [target] : [];
+            }
+        }, 100);
 
         const onPointerMove = (event: MouseEvent) => {
             pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -159,7 +157,7 @@ const BrasovSquare: React.FC = () => {
                             controls.update()
                         },
                     });
-                } else if (target.name.startsWith("Building_Biserica_N")) {
+                } else if (target.name.startsWith("Building_Biserica_Neagr")) {
 
                     setBuildingDetails({
                         name: "Biserica Neagra",
@@ -185,26 +183,17 @@ const BrasovSquare: React.FC = () => {
             }
         };
 
-
         const onKeyUp = (event: KeyboardEvent) => {
             if (event.key === '1') {
                 stats.dom.style.opacity = stats.dom.style.opacity === "0" ? "0.9" : "0";
             }
 
             if (event.key === '2') {
-                grayscalePass.uniforms.amount.value = grayscalePass.uniforms.amount.value === 1.0 ? 0.0 : 1.0;
-            }
-
-            if (event.key === '3') {
                 infoContainerRef.current!.style.opacity = infoContainerRef.current!.style.opacity === "0" ? "1" : "0";
             }
         }
 
         const renderScene = (): void => {
-
-            if (camera.position.y < 0) {
-                camera.position.y = 0;
-            }
 
             directional.position.set(camera.position.x, camera.position.y, camera.position.z);
 
@@ -212,11 +201,13 @@ const BrasovSquare: React.FC = () => {
 
             stats.update();
 
-            infoContainerRef.current!.innerText = `Position: x: ${camera.position.x.toFixed(2)}, y: ${camera.position.y.toFixed(2)}, z: ${camera.position.z.toFixed(2)}
-                Target: x: ${controls.target.x.toFixed(2)}, y: ${controls.target.y.toFixed(2)}, z: ${controls.target.z.toFixed(2)}
-                Mouse: x: ${pointer.x.toFixed(2)}, y: ${pointer.y.toFixed(2)}
-                Intersect: ${selectedObjectRef.current?.name}
-                `;
+            if (infoContainerRef.current) {
+                infoContainerRef.current.innerText = `Position: x: ${camera.position.x.toFixed(2)}, y: ${camera.position.y.toFixed(2)}, z: ${camera.position.z.toFixed(2)}
+                    Target: x: ${controls.target.x.toFixed(2)}, y: ${controls.target.y.toFixed(2)}, z: ${controls.target.z.toFixed(2)}
+                    Mouse: x: ${pointer.x.toFixed(2)}, y: ${pointer.y.toFixed(2)}
+                    Intersect: ${selectedObjectRef.current?.name}
+                    `;
+            }
         };
 
         renderer.setAnimationLoop(renderScene);
@@ -242,7 +233,9 @@ const BrasovSquare: React.FC = () => {
             renderer.domElement.removeEventListener('pointermove', onPointerMove);
             renderer.domElement.removeEventListener('click', onClick);
 
-            container!.removeChild(renderer.domElement);
+            if (container) {
+                container.removeChild(renderer.domElement);
+            }
         };
 
     }, []);
@@ -268,6 +261,18 @@ const BrasovSquare: React.FC = () => {
                     <h2 style={{ color: 'black' }}>{buildingDetails.name}</h2>
                     <Image src={buildingDetails.imageUrl} alt={buildingDetails.name} width={800} height={450} style={{ borderRadius: '5px' }} />
                     <p style={{ color: 'black', marginTop: '10px' }}>{buildingDetails.description}</p>
+                </div>
+            )}
+
+            {isLoading && (
+                <div style={{
+                    position: 'absolute',
+                    top: 0, left: 0, width: '100%', height: '100%',
+                    backgroundColor: 'black', color: 'white',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexDirection: 'column', fontSize: '20px', zIndex: 1000
+                }}>
+                    <p>Loading... {loadingProgress.toFixed(0)}%</p>
                 </div>
             )}
 

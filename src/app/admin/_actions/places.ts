@@ -1,24 +1,25 @@
 "use server";
 
-import db from "@/db/db";
-import { z } from "zod";
 import fs from "fs/promises";
-import { notFound, redirect } from "next/navigation";
+import crypto from "crypto";
+import db from "@/db/db";
 import { revalidatePath } from "next/cache";
+import { redirect, notFound } from "next/navigation";
+import { z } from "zod";
 
-const fileSchema = z.instanceof(File, { message: "Required" });
-const imageSchema = fileSchema.refine(
-  (file: File) => file.size === 0 || file.type.startsWith("image/")
-);
-
+const imageSchema = z.instanceof(File, { message: "Required" });
 const addSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
   description: z.string().min(1),
   location: z.string().min(1),
-  x: z.coerce.number().min(-180).max(180),
-  y: z.coerce.number().min(-90).max(90),
-  z: z.coerce.number().min(-180).max(180),
+  camera_x: z.number(),
+  camera_y: z.number(),
+  camera_z: z.number(),
+  target_x: z.number(),
+  target_y: z.number(),
+  target_z: z.number(),
+  map_name: z.string().min(1),
   image: imageSchema.refine((file: File) => file.size > 0, "Required"),
 });
 
@@ -43,9 +44,13 @@ export async function addAttraction(prevState: unknown, formData: FormData) {
       name: data.name,
       description: data.description,
       location: data.location,
-      x: data.x,
-      y: data.y,
-      z: data.z,
+      camera_x: data.camera_x,
+      camera_y: data.camera_y,
+      camera_z: data.camera_z,
+      target_x: data.target_x,
+      target_y: data.target_y,
+      target_z: data.target_z,
+      map_name: data.map_name,
       imagePath,
     },
   });
@@ -91,9 +96,13 @@ export async function updateAttraction(
       name: data.name,
       description: data.description,
       location: data.location,
-      x: data.x,
-      y: data.y,
-      z: data.z,
+      camera_x: data.camera_x,
+      camera_y: data.camera_y,
+      camera_z: data.camera_z,
+      target_x: data.target_x,
+      target_y: data.target_y,
+      target_z: data.target_z,
+      map_name: data.map_name,
       imagePath,
     },
   });

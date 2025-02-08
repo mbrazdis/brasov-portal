@@ -18,9 +18,9 @@ export function PlaceForm({ attraction }: { attraction?: Attraction | null }) {
     {}
   );
   const [coordinates, setCoordinates] = useState({
-    x: attraction?.x || 0,
-    y: attraction?.y || 0,
-    z: attraction?.z || 0,
+    camera_x: attraction?.camera_x || 0,
+    camera_y: attraction?.camera_y || 0,
+    camera_z: attraction?.camera_z || 0,
   });
   const [id, setId] = useState(attraction?.id || uuidv4());
 
@@ -79,37 +79,37 @@ export function PlaceForm({ attraction }: { attraction?: Attraction | null }) {
         <div className="flex space-x-2">
           <Input
             type="number"
-            id="x"
-            name="x"
+            id="camera_x"
+            name="camera_x"
             required
-            value={coordinates.x}
-            onChange={(e) => setCoordinates({ ...coordinates, x: parseFloat(e.target.value) })}
-            placeholder="X"
+            value={coordinates.camera_x}
+            onChange={(e) => setCoordinates({ ...coordinates, camera_x: parseFloat(e.target.value) })}
+            placeholder="Camera X"
           />
           <Input
             type="number"
-            id="y"
-            name="y"
+            id="camera_y"
+            name="camera_y"
             required
-            value={coordinates.y}
-            onChange={(e) => setCoordinates({ ...coordinates, y: parseFloat(e.target.value) })}
-            placeholder="Y"
+            value={coordinates.camera_y}
+            onChange={(e) => setCoordinates({ ...coordinates, camera_y: parseFloat(e.target.value) })}
+            placeholder="Camera Y"
           />
           <Input
             type="number"
-            id="z"
-            name="z"
+            id="camera_z"
+            name="camera_z"
             required
-            value={coordinates.z}
-            onChange={(e) => setCoordinates({ ...coordinates, z: parseFloat(e.target.value) })}
-            placeholder="Z"
+            value={coordinates.camera_z}
+            onChange={(e) => setCoordinates({ ...coordinates, camera_z: parseFloat(e.target.value) })}
+            placeholder="Camera Z"
           />
         </div>
-        {(error.x || error.y || error.z) && (
+        {(error.camera_x || error.camera_y || error.camera_z) && (
           <div className="text-destructive">
-            {error.x && <div>{error.x}</div>}
-            {error.y && <div>{error.y}</div>}
-            {error.z && <div>{error.z}</div>}
+            {error.camera_x && <div>{error.camera_x}</div>}
+            {error.camera_y && <div>{error.camera_y}</div>}
+            {error.camera_z && <div>{error.camera_z}</div>}
           </div>
         )}
       </div>

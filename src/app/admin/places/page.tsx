@@ -37,15 +37,22 @@ export default function AdminAttractionsPage() {
 }
 
 async function AttractionsTable() {
-const attractions = await db.attraction.findMany({
+  const attractions = await db.attraction.findMany({
     select: {
-        id: true,
-        name: true,
-        location: true,
-        _count: { select: { reviews: true } },
+      id: true,
+      name: true,
+      location: true,
+      camera_x: true,
+      camera_y: true,
+      camera_z: true,
+      target_x: true,
+      target_y: true,
+      target_z: true,
+      map_name: true,
+      _count: { select: { reviews: true } },
     },
     orderBy: { name: "asc" },
-});
+  });
 
   if (attractions.length === 0) return <p>No attractions found</p>;
 
@@ -86,7 +93,6 @@ const attractions = await db.attraction.findMany({
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-
                 </DropdownMenuContent>
               </DropdownMenu>
             </TableCell>

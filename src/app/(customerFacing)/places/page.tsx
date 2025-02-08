@@ -1,5 +1,5 @@
 import React from "react";
-import BrasovSquare from "../../../components/BrasovSquare";
+import BrasovSquare from "@/components/BrasovSquare";
 
 export default function PlacesPage() {
   return (
