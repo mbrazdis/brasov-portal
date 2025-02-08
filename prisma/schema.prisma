@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite" 
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -21,12 +21,12 @@ model User {
 }
 
 model Event {
-  id          String      @id @default(uuid())
+  id          String   @id @default(uuid())
   title       String
   description String
   date        DateTime
   location    String
-  isActive    Boolean     @default(true)
+  isActive    Boolean  @default(true)
   reviews     Review[]
 
   @@map("events")
@@ -44,40 +44,44 @@ model News {
 }
 
 model Review {
-  id          String      @id @default(uuid())
-  content     String
-  rating      Int         @default(1) 
-  user        User        @relation(fields: [userId], references: [id])
-  userId      String
-  event       Event?      @relation(fields: [eventId], references: [id])
-  eventId     String?
-  attraction  Attraction? @relation(fields: [attractionId], references: [id])
+  id           String      @id @default(uuid())
+  content      String
+  rating       Int         @default(1)
+  user         User        @relation(fields: [userId], references: [id])
+  userId       String
+  event        Event?      @relation(fields: [eventId], references: [id])
+  eventId      String?
+  attraction   Attraction? @relation(fields: [attractionId], references: [id])
   attractionId String?
 
   @@map("reviews")
 }
 
 model Attraction {
-  id          String      @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
+  map_name    String
   description String
   location    String
-  x           Float
-  y           Float
-  z           Float
+  camera_x    Float
+  camera_y    Float
+  camera_z    Float
+  target_x    Float
+  target_y    Float
+  target_z    Float
   imagePath   String
-  isActive    Boolean     @default(true)
+  isActive    Boolean  @default(true)
   reviews     Review[]
 
   @@map("attractions")
 }
 
 model ForumPost {
-  id        String      @id @default(uuid())
-  title     String
-  content   String
-  user      User        @relation(fields: [userId], references: [id])
-  userId    String
+  id      String @id @default(uuid())
+  title   String
+  content String
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String
 
   @@map("forum_posts")
 }
