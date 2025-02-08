@@ -6,20 +6,34 @@ import Image from "next/image";
 import debounce from "lodash.debounce";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
+import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
 import { gsap } from "gsap";
 
-const buildings = [
-    'Building_Casa_Sfat',
-    'Building_Casa_Mures',
-    'Building_Biserica_Neagr',
-];
+interface Attraction {
+    id: string;
+    name: string;
+    map_name: string;
+    description: string;
+    location: string;
+    camera_x: number;
+    camera_y: number;
+    camera_z: number;
+    target_x: number;
+    target_y: number;
+    target_z: number;
+    imagePath: string;
+    isActive: boolean;
+}
+
+let interactibleAttractions: Attraction[] = [];
 
 const BrasovSquare: React.FC = () => {
     const modelRef = useRef<THREE.Group | null>(null);
     const selectedObjectRef = useRef<THREE.Object3D | null>(null);
+    const hoveredObjectRef = useRef<THREE.Object3D | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const infoContainerRef = useRef<HTMLDivElement>(null);
     const buildingDetailsRef = useRef<HTMLDivElement>(null);
@@ -32,6 +46,20 @@ const BrasovSquare: React.FC = () => {
         if (typeof window === 'undefined') {
             return;
         }
+
+        async function fetchAttractions() {
+            try {
+                const response = await fetch("/api/attractions");
+                if (!response.ok) throw new Error("Failed to fetch data");
+                const data = await response.json();
+                interactibleAttractions = data;
+                console.log("Interactible attractions:", interactibleAttractions);
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        fetchAttractions();
 
         const stats = new Stats();
         stats.dom.style.opacity = "0";
@@ -53,15 +81,18 @@ const BrasovSquare: React.FC = () => {
         scene.fog = new THREE.Fog(0xeaeaea, 50, 200);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(8.0, 10.0, -20.0);
+        camera.position.set(80, 5.0, -62.0);
 
-        const directional = new THREE.DirectionalLight(0xffffff, 1);
+        const ambient = new THREE.AmbientLight(0xffffff, 1);
+        scene.add(ambient);
+
+        const directional = new THREE.DirectionalLight(0xffffff, 0.8);
         scene.add(directional);
 
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.minDistance = 5;
-        controls.maxDistance = 50;
-        controls.panSpeed = 4;
+        controls.minDistance = 0.5;
+        controls.maxDistance = 100;
+        controls.panSpeed = 2;
         controls.enableDamping = true;
         controls.dampingFactor = 0.5;
 
@@ -79,21 +110,28 @@ const BrasovSquare: React.FC = () => {
             }
         };
 
-        new OBJLoader().load(
-            'models/brasov.obj',
-            (obj) => {
-                modelRef.current = obj;
-                obj.position.set(0, -0.95, 0);
-                obj.scale.set(0.2, 0.2, 0.2);
-                scene.add(obj);
-        
-                setIsLoading(false); 
-            },
-            onProgress,
-            (error) => {
-                console.error("Error loading OBJ model:", error);
-            }
-        );
+        new MTLLoader()
+            .setPath('models/')
+            .load('brasov.mtl', (mtl) => {
+                mtl.preload();
+
+                new OBJLoader()
+                    .setMaterials(mtl)
+                    .setPath('models/')
+                    .load('brasov.obj', (obj) => {
+                        modelRef.current = obj;
+                        obj.position.set(0, -0.95, 0);
+                        obj.scale.set(0.2, 0.2, 0.2);
+                        scene.add(obj);
+
+                        setIsLoading(false);
+                    },
+                        onProgress,
+                        (error) => {
+                            console.error("Error loading OBJ model:", error);
+                        }
+                    );
+            });
 
         const renderPass = new RenderPass(scene, camera);
         const outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
@@ -116,11 +154,13 @@ const BrasovSquare: React.FC = () => {
             const intersects = raycaster.intersectObjects(scene.children, true);
             if (intersects.length > 0) {
                 const target = intersects[0].object;
-                const isBuilding = buildings.some(name => target.name.startsWith(name));
-                selectedObjectRef.current = isBuilding ? target : null;
-                outlinePass.selectedObjects = isBuilding ? [target] : [];
+
+                hoveredObjectRef.current = target;
+
+                const building = target.name.startsWith("Building_") || target.name.startsWith("CityWall_Cet");
+                outlinePass.selectedObjects = building ? [hoveredObjectRef.current] : [];
             }
-        }, 100);
+        }, 50);
 
         const onPointerMove = (event: MouseEvent) => {
             pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -134,52 +174,48 @@ const BrasovSquare: React.FC = () => {
 
             if (intersects.length > 0) {
                 const target = intersects[0].object;
+                const attraction = interactibleAttractions.find(a => a.map_name === target.name);
+                selectedObjectRef.current = attraction ? target : null;
 
-                if (target.name.startsWith("Building_Casa_Sfatului")) {
-
+                if (attraction) {
                     setBuildingDetails({
-                        name: "Casa Sfatului",
-                        description: `Short description about Casa Sfatului. This building is located in Brasov, Romania.`,
-                        imageUrl: "/images/casa_sfatului.jpg"
+                        name: attraction.name,
+                        description: attraction.description,
+                        imageUrl: attraction.imagePath,
                     });
 
                     gsap.to(controls.target, {
-                        x: -8.57, y: 0.84, z: 6.08,
-                        duration: 2,
-                        ease: "power3.inOut"
+                        x: attraction.target_x, y: attraction.target_y, z: attraction.target_z,
+                        duration: 2, ease: "power3.inOut"
                     });
 
                     gsap.to(camera.position, {
-                        x: -10.43, y: 2.63, z: 18.04,
-                        duration: 2,
-                        ease: "power3.inOut",
+                        x: attraction.camera_x, y: attraction.camera_y, z: attraction.camera_z,
+                        duration: 2, ease: "power3.inOut",
                         onUpdate: () => {
                             controls.update()
                         },
                     });
-                } else if (target.name.startsWith("Building_Biserica_Neagr")) {
 
-                    setBuildingDetails({
-                        name: "Biserica Neagra",
-                        description: `Short description about Biserica Neagra. This building is located in Brasov, Romania.`,
-                        imageUrl: "/images/biserica_neagra.jpeg"
-                    });
+                    if (buildingDetailsRef.current) {
+                        buildingDetailsRef.current.style.opacity = "1";
+                    }
+                }
+                else {
+                    if (buildingDetailsRef.current) {
+                        buildingDetailsRef.current.style.opacity = "0";
+                    }
+                }
 
-                    gsap.to(controls.target, {
-                        x: -26.29, y: 5.42, z: 24.31,
-                        duration: 2,
-                        ease: "power3.inOut"
-                    });
-
+                if (outlinePass.selectedObjects.length === 0) {
                     gsap.to(camera.position, {
-                        x: -51.11, y: 10.72, z: 14.32,
-                        duration: 2,
-                        ease: "power3.inOut",
-                        onUpdate: () => {
-                            controls.update()
-                        },
+                        z: camera.position.z + 2, // Move forward along the Z-axis
+                        duration: 1,
+                        ease: "power2.out",
+                        onUpdate: () => { controls.update() },
                     });
                 }
+
             }
         };
 
@@ -195,8 +231,6 @@ const BrasovSquare: React.FC = () => {
 
         const renderScene = (): void => {
 
-            directional.position.set(camera.position.x, camera.position.y, camera.position.z);
-
             outputComposer.render();
 
             stats.update();
@@ -206,6 +240,7 @@ const BrasovSquare: React.FC = () => {
                     Target: x: ${controls.target.x.toFixed(2)}, y: ${controls.target.y.toFixed(2)}, z: ${controls.target.z.toFixed(2)}
                     Mouse: x: ${pointer.x.toFixed(2)}, y: ${pointer.y.toFixed(2)}
                     Intersect: ${selectedObjectRef.current?.name}
+                    Horeing over: ${hoveredObjectRef.current?.name}
                     `;
             }
         };
@@ -256,7 +291,8 @@ const BrasovSquare: React.FC = () => {
                     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
                     width: '45%',
                     maxWidth: '800px',
-                    zIndex: 10
+                    zIndex: 10,
+                    opacity: 1,
                 }}>
                     <h2 style={{ color: 'black' }}>{buildingDetails.name}</h2>
                     <Image src={buildingDetails.imageUrl} alt={buildingDetails.name} width={800} height={450} style={{ borderRadius: '5px' }} />
@@ -276,7 +312,7 @@ const BrasovSquare: React.FC = () => {
                 </div>
             )}
 
-            <div ref={infoContainerRef} style={{ position: 'absolute', top: '600px', left: '10px', color: 'black', backgroundColor: 'white', padding: '5px', borderRadius: '5px', opacity: "0" }} />
+            <div ref={infoContainerRef} style={{ position: 'absolute', top: '600px', left: '10px', color: 'black', backgroundColor: 'white', padding: '5px', borderRadius: '5px', opacity: "1" }} />
         </div>
     );
 }
