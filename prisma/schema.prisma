@@ -7,6 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model ForumPost {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+
+  @@map("forum_posts")
+}
+
 model User {
   id         String      @id @default(uuid())
   name       String
@@ -14,7 +25,6 @@ model User {
   password   String
   role       Role        @default(USER)
   createdAt  DateTime    @default(now())
-  reviews    Review[]
   forumPosts ForumPost[]
 
   @@map("users")
@@ -47,7 +57,6 @@ model Review {
   id           String      @id @default(uuid())
   content      String
   rating       Int         @default(1)
-  user         User        @relation(fields: [userId], references: [id])
   userId       String
   event        Event?      @relation(fields: [eventId], references: [id])
   eventId      String?
@@ -76,15 +85,6 @@ model Attraction {
   @@map("attractions")
 }
 
-model ForumPost {
-  id      String @id @default(uuid())
-  title   String
-  content String
-  user    User   @relation(fields: [userId], references: [id])
-  userId  String
-
-  @@map("forum_posts")
-}
 
 enum Role {
   USER
