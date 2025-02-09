@@ -41,7 +41,6 @@ function renderNews(news: NewsItem[]) {
           </CardHeader>
           <CardContent>
             <div className="flex justify-center mb-4">
-            
               <Image src={newsItem.imagePath} alt={newsItem.title} width={300} height={225} className="rounded-lg" />
             </div>
             <p className="text-gray-500 mb-4">
@@ -74,22 +73,7 @@ export default async function NewsPage() {
           <h2 className="text-2xl font-bold mb-6">More News</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {/* Placeholder elements for design */}
-            <div className="bg-white p-4 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold mb-2">Placeholder Title</h3>
-              <p className="text-gray-500 mb-4">This is a placeholder content for design purposes.</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold mb-2">Placeholder Title</h3>
-              <p className="text-gray-500 mb-4">This is a placeholder content for design purposes.</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold mb-2">Placeholder Title</h3>
-              <p className="text-gray-500 mb-4">This is a placeholder content for design purposes.</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold mb-2">Placeholder Title</h3>
-              <p className="text-gray-500 mb-4">This is a placeholder content for design purposes.</p>
-            </div>
+            
           </div>
         </section>
       </main>

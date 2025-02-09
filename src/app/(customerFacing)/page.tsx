@@ -61,12 +61,12 @@ export default function AdminDashboard() {
       <section className="py-8 bg-gray-50 text-center w-full">
         <div className="w-full">
           <h2 className="text-3xl font-bold mb-6">Brasov City</h2>
-          <div className="flex justify-center overflow-hidden" style={{ height: '300px' }}>
+          <div className="flex justify-center overflow-hidden">
         <Image
           src="/brasov-romania.jpg"
           alt="Brasov City"
-          width={1757}
-          height={600}
+          width={800}
+          height={450}
           className="rounded-lg shadow-md object-cover"
           style={{ height: 'auto', width: 'auto' }}
         />
@@ -78,7 +78,7 @@ export default function AdminDashboard() {
       <section className="py-8 bg-gray-50 text-center w-full">
         <div className="w-full max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold mb-6">About Brasov</h2>
-          <p className="text-gray-700 text-lg">
+          <p className="text-gray-700 text-lg text-justify">
             Brasov is a city in Romania, located in the central part of the country. It is known for its medieval
             architecture, vibrant cultural scene, and beautiful natural surroundings. The city is surrounded by the
             Carpathian Mountains, making it a popular destination for outdoor activities such as hiking, skiing, and
@@ -144,9 +144,16 @@ async function DataSuspense<T>({ dataFetcher, renderData }: DataSuspenseProps<T>
 
 function renderEvent(event: Event) {
   return (
-    <div>
-      <h3>{event.title}</h3>
-      <p>{event.description}</p>
+    <div className="justify-center">
+      <h3 className="mb-2">{event.title}</h3>
+      <Image 
+        src="/images/event.webp"
+        alt="event"
+        width={200}
+        height={150}
+        className="rounded-lg mb-4"
+        />
+      <p className="mb-2">{event.description}</p>
       <p>{new Date(event.date).toLocaleDateString()}</p>
       <p>{event.location}</p>
     </div>
@@ -181,9 +188,9 @@ function renderForumPost(forumPost: ForumPost) {
 
 function renderNews(news: { id: string; title: string; content: string; date: Date; imagePath: string; isActive: boolean; }) {
   return (
-    <div>
-      <h3>{news.title}</h3>
-      <div className="flex justify-center">
+    <div className="mb-2">
+      <h3 className="mb-2">{news.title}</h3>
+      <div className="flex justify-center mb-2">
         <Image src={news.imagePath} alt={news.title} width={300} height={225} />
       </div>
       <p>{news.content}</p>

@@ -1,7 +1,6 @@
 'use client'
 import * as THREE from "three";
 import React, { useRef, useEffect, useState } from "react";
-import Stats from 'three/addons/libs/stats.module.js';
 import Image from "next/image";
 import debounce from "lodash.debounce";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -10,7 +9,33 @@ import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { gsap } from "gsap";
+
+const GrayscaleShader = {
+    uniforms: {
+        "tDiffuse": { value: null },
+        "amount": { value: 1.0 }
+    },
+    vertexShader: `
+        varying vec2 vUv;
+        void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    `,
+    fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform float amount;
+        varying vec2 vUv;
+        
+        void main() {
+            vec4 color = texture2D(tDiffuse, vUv);
+            float orange = dot(color.rgb, vec3(0.8, 0.34, 0.2)); 
+            gl_FragColor = mix(color, vec4(vec3(orange), color.a), amount);
+        }
+    `
+};
 
 interface Attraction {
     id: string;
@@ -35,11 +60,12 @@ const BrasovSquare: React.FC = () => {
     const selectedObjectRef = useRef<THREE.Object3D | null>(null);
     const hoveredObjectRef = useRef<THREE.Object3D | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const infoContainerRef = useRef<HTMLDivElement>(null);
     const buildingDetailsRef = useRef<HTMLDivElement>(null);
     const [buildingDetails, setBuildingDetails] = useState<{ name: string, description: string, imageUrl: string } | null>(null);
     const [loadingProgress, setLoadingProgress] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
+    let atractionIndex: number = 0;
+    let shouldRotate: boolean = true;
 
     useEffect(() => {
 
@@ -61,9 +87,6 @@ const BrasovSquare: React.FC = () => {
 
         fetchAttractions();
 
-        const stats = new Stats();
-        stats.dom.style.opacity = "0";
-
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setPixelRatio(window.devicePixelRatio);
 
@@ -72,7 +95,6 @@ const BrasovSquare: React.FC = () => {
             container.style.width = '100%';
             container.style.height = '100%';
             container.style.overflow = 'hidden';
-            container.append(stats.dom);
             container.appendChild(renderer.domElement);
             renderer.setSize(container.clientWidth, container.clientHeight);
         }
@@ -81,7 +103,7 @@ const BrasovSquare: React.FC = () => {
         scene.fog = new THREE.Fog(0xeaeaea, 50, 200);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(80, 5.0, -62.0);
+        camera.position.set(80, 30.0, -62.0);
 
         const ambient = new THREE.AmbientLight(0xffffff, 1);
         scene.add(ambient);
@@ -90,11 +112,11 @@ const BrasovSquare: React.FC = () => {
         scene.add(directional);
 
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.minDistance = 0.5;
+        controls.minDistance = 0.1;
         controls.maxDistance = 100;
-        controls.panSpeed = 2;
+        controls.panSpeed = 3.5;
         controls.enableDamping = true;
-        controls.dampingFactor = 0.5;
+        controls.dampingFactor = 0.1;
 
         const cubeTextureLoader = new THREE.CubeTextureLoader();
         cubeTextureLoader.setPath('textures/skybox/');
@@ -142,9 +164,12 @@ const BrasovSquare: React.FC = () => {
         outlinePass.visibleEdgeColor.set('#ffffff');
         outlinePass.hiddenEdgeColor.set('#ffffff');
 
+        const grayscalePass = new ShaderPass(GrayscaleShader);
+
         const outputComposer = new EffectComposer(renderer);
         outputComposer.addPass(renderPass);
         outputComposer.addPass(outlinePass);
+        outputComposer.addPass(grayscalePass);
 
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
@@ -157,10 +182,13 @@ const BrasovSquare: React.FC = () => {
 
                 hoveredObjectRef.current = target;
 
-                const building = target.name.startsWith("Building_") || target.name.startsWith("CityWall_Cet");
-                outlinePass.selectedObjects = building ? [hoveredObjectRef.current] : [];
+                const isSurface = target.name.startsWith("Surface");
+
+                if (!isSurface) {
+                    outlinePass.selectedObjects = target ? [hoveredObjectRef.current] : [];
+                }
             }
-        }, 50);
+        }, 1000);
 
         const onPointerMove = (event: MouseEvent) => {
             pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -169,6 +197,7 @@ const BrasovSquare: React.FC = () => {
         }
 
         const onClick = () => {
+
             raycaster.setFromCamera(pointer, camera);
             const intersects = raycaster.intersectObjects(scene.children, true);
 
@@ -196,57 +225,72 @@ const BrasovSquare: React.FC = () => {
                             controls.update()
                         },
                     });
-
-                    if (buildingDetailsRef.current) {
-                        buildingDetailsRef.current.style.opacity = "1";
-                    }
                 }
                 else {
-                    if (buildingDetailsRef.current) {
-                        buildingDetailsRef.current.style.opacity = "0";
-                    }
+                    setBuildingDetails(null);
                 }
 
                 if (outlinePass.selectedObjects.length === 0) {
                     gsap.to(camera.position, {
-                        z: camera.position.z + 2, // Move forward along the Z-axis
+                        z: camera.position.z + 2,
                         duration: 1,
                         ease: "power2.out",
                         onUpdate: () => { controls.update() },
                     });
                 }
-
             }
         };
 
-        const onKeyUp = (event: KeyboardEvent) => {
-            if (event.key === '1') {
-                stats.dom.style.opacity = stats.dom.style.opacity === "0" ? "0.9" : "0";
-            }
+        const onKeyDown = (event: KeyboardEvent) => {
 
-            if (event.key === '2') {
-                infoContainerRef.current!.style.opacity = infoContainerRef.current!.style.opacity === "0" ? "1" : "0";
+            if (event.key === 's') {
+
+                const targetObject = scene.getObjectByName(interactibleAttractions[atractionIndex].name);
+
+                if (targetObject) {
+                    selectedObjectRef.current = targetObject;
+                    outlinePass.selectedObjects = [targetObject]; 
+                }
+
+                setBuildingDetails({
+                    name: interactibleAttractions[atractionIndex].name,
+                    description: interactibleAttractions[atractionIndex].description,
+                    imageUrl: interactibleAttractions[atractionIndex].imagePath,
+                });
+
+                gsap.to(controls.target, {
+                    x: interactibleAttractions[atractionIndex].target_x, y: interactibleAttractions[atractionIndex].target_y, z: interactibleAttractions[atractionIndex].target_z,
+                    duration: 2, ease: "power3.inOut"
+                });
+
+                gsap.to(camera.position, {
+                    x: interactibleAttractions[atractionIndex].camera_x, y: interactibleAttractions[atractionIndex].camera_y, z: interactibleAttractions[atractionIndex].camera_z,
+                    duration: 2, ease: "power3.inOut",
+                    onUpdate: () => {
+                        controls.update()
+                    },
+                });
+
+                atractionIndex++;
+
+                if (atractionIndex >= interactibleAttractions.length) {
+                    atractionIndex = 0;
+                }
             }
         }
 
         const renderScene = (): void => {
 
-            outputComposer.render();
-
-            stats.update();
-
-            if (infoContainerRef.current) {
-                infoContainerRef.current.innerText = `Position: x: ${camera.position.x.toFixed(2)}, y: ${camera.position.y.toFixed(2)}, z: ${camera.position.z.toFixed(2)}
-                    Target: x: ${controls.target.x.toFixed(2)}, y: ${controls.target.y.toFixed(2)}, z: ${controls.target.z.toFixed(2)}
-                    Mouse: x: ${pointer.x.toFixed(2)}, y: ${pointer.y.toFixed(2)}
-                    Intersect: ${selectedObjectRef.current?.name}
-                    Horeing over: ${hoveredObjectRef.current?.name}
-                    `;
+            if (shouldRotate) {
+                camera.rotateY(0.01);
+                controls.update();
             }
+
+            outputComposer.render();
         };
 
         renderer.setAnimationLoop(renderScene);
-        window.addEventListener('keyup', onKeyUp);
+        window.addEventListener('keydown', onKeyDown);
         renderer.domElement.addEventListener('pointermove', onPointerMove);
         renderer.domElement.addEventListener('click', onClick);
 
@@ -261,7 +305,7 @@ const BrasovSquare: React.FC = () => {
         window.addEventListener('resize', onWindowResize);
 
         return () => {
-            window.removeEventListener("keyup", onKeyUp);
+            window.removeEventListener('keydown', onKeyDown);
             window.removeEventListener('resize', onWindowResize);
             renderer.dispose();
             controls.dispose();
@@ -312,7 +356,6 @@ const BrasovSquare: React.FC = () => {
                 </div>
             )}
 
-            <div ref={infoContainerRef} style={{ position: 'absolute', top: '600px', left: '10px', color: 'black', backgroundColor: 'white', padding: '5px', borderRadius: '5px', opacity: "1" }} />
         </div>
     );
 }

@@ -66,22 +66,7 @@ export default async function EventsPage() {
           <h2 className="text-2xl font-bold mb-6">More Events</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {/* Placeholder elements for design */}
-            <div className="bg-white p-4 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold mb-2">Placeholder Title</h3>
-              <p className="text-gray-500 mb-4">This is a placeholder content for design purposes.</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold mb-2">Placeholder Title</h3>
-              <p className="text-gray-500 mb-4">This is a placeholder content for design purposes.</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold mb-2">Placeholder Title</h3>
-              <p className="text-gray-500 mb-4">This is a placeholder content for design purposes.</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold mb-2">Placeholder Title</h3>
-              <p className="text-gray-500 mb-4">This is a placeholder content for design purposes.</p>
-            </div>
+            
           </div>
         </section>
       </main>
